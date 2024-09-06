@@ -74,10 +74,10 @@ export default function Report({ data, fromDate, toDate }) {
     const [from, setFrom] = useState(fromDate); // ตั้งค่าวันที่เริ่มต้น
     const [to, setTo] = useState(toDate); // ตั้งค่าวันที่สิ้นสุด
 
-    // คำนวณค่ารวมของ Target, Product และ Product Value (มูลค่าทั้งหมด)
-    const totalKwSTD = data.reduce((sum, row) => sum + row.kwSTD, 0);
-    const totalProductKw = data.reduce((sum, row) => sum + row.productKw, 0);
-    const totalProductValue = data.reduce((sum, row) => sum + row.productValue, 0).toFixed(2); // ปัดเศษมูลค่าให้มีทศนิยม 2 ตำแหน่ง
+    // คำนวณค่ารวมของ Target, Product และ Product Value (มูลค่าทั้งหมด) และจัดรูปแบบตัวเลข
+    const totalKwSTD = data.reduce((sum, row) => sum + row.kwSTD, 0).toLocaleString(); // จัดรูปแบบตัวเลข
+    const totalProductKw = data.reduce((sum, row) => sum + row.productKw, 0).toLocaleString(); // จัดรูปแบบตัวเลข
+    const totalProductValue = Number(data.reduce((sum, row) => sum + row.productValue, 0).toFixed(2)).toLocaleString(); // จัดรูปแบบตัวเลข พร้อมทศนิยม 2 ตำแหน่ง
 
     const chartData = {
         labels: data.map(row => row.farm), // แสดงชื่อฟาร์มบนแกน X
@@ -113,7 +113,7 @@ export default function Report({ data, fromDate, toDate }) {
                 color: 'black',
                 anchor: 'end',
                 align: 'top',
-                formatter: Math.round // ปัดเศษตัวเลขเป็นจำนวนเต็ม
+                formatter: (value) => value.toLocaleString() // จัดรูปแบบตัวเลขให้มีเครื่องหมาย ,
             }
         },
         responsive: true,
