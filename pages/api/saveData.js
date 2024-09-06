@@ -36,7 +36,7 @@ export default async function handler(req, res) {
             hrStd < 0 || // ตรวจสอบ hrStd
             hrBreakdown < 0 // ตรวจสอบ hrBreakdown
         ) {
-            return res.status(400).json({ message: 'Invalid input data' });
+            return res.status(400).json({ message: 'ข้อมูลผิดพลาด ไม่สามารถบันทึกได้' });
         }
 
         try {
@@ -47,9 +47,9 @@ export default async function handler(req, res) {
             );
             
             // ส่งข้อความตอบกลับเมื่อบันทึกสำเร็จ
-            res.status(200).json({ message: 'Data saved successfully!' });
+            res.status(200).json({ message: 'บันทึกข้อมูลสำเร็จ' });
         } catch (error) {
-            console.error('Error saving data: ', error); // แสดงใน console สำหรับ debug
+            console.error('เกิดข้อผิดพลาด : ', error); // แสดงใน console สำหรับ debug
             res.status(500).json({ message: 'Error saving data. Please try again later.' });
         }
     } else {
