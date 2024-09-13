@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export async function getServerSideProps() {
-    const res = await fetch('http://localhost:3000/api/getDropdownData');
+    const res = await fetch('https://performance-39fwkax8b-jatuphong-s-projects.vercel.app/api/getDropdownData/api/getDropdownData');
     const data = await res.json();
 
     if (!data) {
