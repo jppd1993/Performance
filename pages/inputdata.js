@@ -1,29 +1,50 @@
 import { useState, useEffect } from 'react';
 
 export async function getServerSideProps() {
-    const res = await fetch('https://performance-kappa.vercel.app/api/getDropdownData');
-    const data = await res.json();
+    try {
+        const res = await fetch('https://performance-kappa.vercel.app/api/getDropdownData');
 
-    if (!data) {
+        // ตรวจสอบประเภทของเนื้อหาก่อนแปลงเป็น JSON
+        const contentType = res.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            const data = await res.json();
+
+            if (!data) {
+                return {
+                    props: {
+                        farms: [],
+                        machines: []
+                    }
+                };
+            }
+
+            const { farms, machines } = data;
+
+            return {
+                props: {
+                    farms: farms || [],
+                    machines: machines || []
+                }
+            };
+        } else {
+            // หากไม่ใช่ JSON ให้แสดงข้อผิดพลาด
+            const errorText = await res.text();
+            console.error('Error: Response is not JSON', errorText);
+            throw new Error(`Unexpected response: ${errorText}`);
+        }
+    } catch (error) {
+        console.error('Error fetching data:', error);
         return {
             props: {
                 farms: [],
-                machines: []
+                machines: [],
+                error: 'เกิดข้อผิดพลาดในการดึงข้อมูล'
             }
         };
     }
-
-    const { farms, machines } = data;
-
-    return {
-        props: {
-            farms: farms || [],
-            machines: machines || []
-        }
-    };
 }
 
-export default function Home({ farms, machines }) {
+export default function Home({ farms, machines, error }) {
     const [formData, setFormData] = useState({
         saveDate: '', // ใช้ saveDate แทนจาก fromDate และ toDate
         farm: 'CHTBR', // ตั้งค่า default ให้กับ Farm
@@ -171,6 +192,7 @@ export default function Home({ farms, machines }) {
     return (
         <div className="container mt-5">
             <h1 className="text-center">Biogas Production Data Entry</h1>
+            {error && <p className="text-danger text-center">{error}</p>}
             <form onSubmit={handleSubmit}>
                 {/* ฟิลด์ข้อมูลที่สามารถกรอกได้ */}
                 <div className="row mb-3">
