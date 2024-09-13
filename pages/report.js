@@ -9,39 +9,41 @@ import moment from 'moment'; // ใช้สำหรับจัดการว
 Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
 export async function getServerSideProps({ query }) {
-    const { fromDate, toDate } = query; // รับค่าจาก URL query params
+    const { fromDate, toDate } = query;
 
     try {
-        // ตรวจสอบว่ามีการส่งวันที่มาหรือไม่ ถ้าไม่มีให้ใช้วันที่ล่าสุด
-        const start = fromDate ? fromDate : '1970-01-01'; // ถ้าไม่มี fromDate ให้ใช้ค่าเริ่มต้นเป็นวันเริ่มต้น
-        const end = toDate ? toDate : moment().format('YYYY-MM-DD'); // ถ้าไม่มี toDate ให้ใช้วันที่ปัจจุบัน
+        const start = fromDate ? fromDate : '1970-01-01';
+        const end = toDate ? toDate : moment().format('YYYY-MM-DD');
 
         // Query ข้อมูลโดยกรองตามช่วงวันที่ใน fromDate และ toDate
         const [rows] = await pool.query(
-            'SELECT * FROM biogas.biogasData WHERE fromDate BETWEEN ? AND ? OR toDate BETWEEN ? AND ?',
-            [start, end, start, end]
+            'SELECT * FROM biogas.biogasInput WHERE saveDate BETWEEN ? AND ?',
+            [start, end]
         );
 
         // แปลงวันที่จาก object เป็น string และจัดกลุ่มข้อมูลตามฟาร์ม
         const data = rows.map(row => ({
             ...row,
-            fromDate: moment(row.fromDate).format('YYYY-MM-DD'), // แปลงวันที่เป็น string
-            toDate: moment(row.toDate).format('YYYY-MM-DD') // แปลงวันที่เป็น string
+            fromDate: moment(row.fromDate).format('YYYY-MM-DD'),
+            toDate: moment(row.toDate).format('YYYY-MM-DD')
         }));
 
-        // จัดกลุ่มข้อมูลตามฟาร์มและรวมค่า kwSTD, productKw และ productValue
+        // จัดกลุ่มข้อมูลตามฟาร์มและรวมค่า kwSTD, productKw, productValue และ hrBreakdown
         const groupedData = data.reduce((acc, current) => {
             const farm = current.farm;
             if (!acc[farm]) {
                 acc[farm] = {
                     kwSTD: 0,
                     productKw: 0,
-                    productValue: 0
+                    productValue: 0,
+                    hrBreakdown: 0,
+                    peaUnit: current.peaUnit || 0 // ใช้ peaUnit จากข้อมูลที่ส่งมา
                 };
             }
             acc[farm].kwSTD += current.kwSTD;
             acc[farm].productKw += current.productKw;
             acc[farm].productValue += current.productValue;
+            acc[farm].hrBreakdown += current.hrBreakdown; // เพิ่มค่า Breakdown Hours
             return acc;
         }, {});
 
@@ -50,12 +52,14 @@ export async function getServerSideProps({ query }) {
             farm,
             kwSTD: groupedData[farm].kwSTD,
             productKw: groupedData[farm].productKw,
-            productValue: groupedData[farm].productValue
+            productValue: groupedData[farm].productValue,
+            hrBreakdown: groupedData[farm].hrBreakdown,
+            peaUnit: groupedData[farm].peaUnit // เก็บค่า peaUnit ต่อฟาร์ม
         }));
 
         return {
             props: {
-                data: aggregatedData, // ส่งข้อมูลที่จัดกลุ่มไปยัง frontend
+                data: aggregatedData,
                 fromDate: start,
                 toDate: end
             }
@@ -64,23 +68,22 @@ export async function getServerSideProps({ query }) {
         console.error('Error fetching data:', error);
         return {
             props: {
-                data: [], // หากเกิดข้อผิดพลาดให้ส่งข้อมูลว่าง
+                data: [],
             }
         };
     }
 }
 
 export default function Report({ data, fromDate, toDate }) {
-    const [from, setFrom] = useState(fromDate); // ตั้งค่าวันที่เริ่มต้น
-    const [to, setTo] = useState(toDate); // ตั้งค่าวันที่สิ้นสุด
+    const [from, setFrom] = useState(fromDate);
+    const [to, setTo] = useState(toDate);
 
-    // คำนวณค่ารวมของ Target, Product และ Product Value (มูลค่าทั้งหมด) และจัดรูปแบบตัวเลข
-    const totalKwSTD = data.reduce((sum, row) => sum + row.kwSTD, 0).toLocaleString(); // จัดรูปแบบตัวเลข
-    const totalProductKw = data.reduce((sum, row) => sum + row.productKw, 0).toLocaleString(); // จัดรูปแบบตัวเลข
-    const totalProductValue = Number(data.reduce((sum, row) => sum + row.productValue, 0).toFixed(2)).toLocaleString(); // จัดรูปแบบตัวเลข พร้อมทศนิยม 2 ตำแหน่ง
+    const totalKwSTD = data.reduce((sum, row) => sum + row.kwSTD, 0).toLocaleString();
+    const totalProductKw = data.reduce((sum, row) => sum + row.productKw, 0).toLocaleString();
+    const totalProductValue = Number(data.reduce((sum, row) => sum + row.productValue, 0).toFixed(2)).toLocaleString();
 
     const chartData = {
-        labels: data.map(row => row.farm), // แสดงชื่อฟาร์มบนแกน X
+        labels: data.map(row => row.farm),
         datasets: [
             {
                 label: 'Target (kW)',
@@ -113,7 +116,32 @@ export default function Report({ data, fromDate, toDate }) {
                 color: 'black',
                 anchor: 'end',
                 align: 'top',
-                formatter: (value) => value.toLocaleString() // จัดรูปแบบตัวเลขให้มีเครื่องหมาย ,
+                formatter: (value, context) => {
+                    const rowIndex = context.dataIndex;
+                    const farmData = data[rowIndex];
+
+                    // คำนวณมูลค่าของ Target
+                    if (context.dataset.label === 'Target (kW)') {
+                        const targetValue = (farmData.peaUnit * farmData.kwSTD).toFixed(2);
+                        return `${value.toLocaleString()} kW\n${Number(targetValue).toLocaleString()} บาท`; // มูลค่า Target
+                    }
+
+                    // แสดงค่าของ Production พร้อมกับตรวจสอบว่า farm มี Breakdown Hours หรือไม่
+                    const breakdownText = farmData.hrBreakdown > 0
+                        ? `\nBreakdown: ${farmData.hrBreakdown} hrs` // แสดง Breakdown Hours
+                        : '';
+                    
+                    return `${value.toLocaleString()} kW\n${Number(farmData.productValue).toLocaleString()} บาท${breakdownText}`;
+                },
+                textAlign: 'center',
+                color: (context) => {
+                    return context.dataset.label === 'Produced (kW)' && data[context.dataIndex].hrBreakdown > 0 ? 'red' : 'black'; // สีแดงถ้ามี Breakdown
+                },
+                font: {
+                    weight: (context) => {
+                        return context.dataset.label === 'Produced (kW)' && data[context.dataIndex].hrBreakdown > 0 ? 'bold' : 'normal'; // ตัวหนาถ้ามี Breakdown
+                    }
+                }
             }
         },
         responsive: true,
@@ -121,22 +149,21 @@ export default function Report({ data, fromDate, toDate }) {
             x: {
                 title: {
                     display: true,
-                    text: 'ฟาร์ม' // แสดงชื่อฟาร์มบนแกน X
+                    text: 'ฟาร์ม'
                 }
             },
             y: {
                 title: {
                     display: true,
-                    text: 'kWh' // แกน Y เป็นหน่วย kWh
+                    text: 'kWh'
                 },
                 beginAtZero: true
             }
         }
     };
 
-    // ฟังก์ชันส่งคำขอไปยัง backend เพื่อกรองข้อมูลตามช่วงวันที่
     const handleFilter = () => {
-        window.location.href = `?fromDate=${from}&toDate=${to}`; // ส่งค่าช่วงวันที่ไปใน URL query
+        window.location.href = `?fromDate=${from}&toDate=${to}`;
     };
 
     return (
@@ -168,8 +195,8 @@ export default function Report({ data, fromDate, toDate }) {
                 fontWeight: 'bold', 
                 lineHeight: '1.2',
                 borderRadius: '8px',
-                margin: '0 auto', // จัดให้อยู่ตรงกลางแนวนอน
-                textAlign: 'center' // จัดข้อความให้อยู่ตรงกลาง
+                margin: '0 auto', 
+                textAlign: 'center' 
             }}>
                 <p style={{ margin: 0 }}>พลังงานทั้งหมด: {totalProductKw} kW</p>
                 <p style={{ margin: 0 }}>เป้าหมาย: {totalKwSTD} kW</p>

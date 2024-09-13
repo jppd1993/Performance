@@ -7,7 +7,7 @@ export default async function handler(req, res) {
             // รับค่าจาก query สำหรับฟิลเตอร์ช่วงวันที่
             const { fromDate, toDate } = req.query;
 
-            let query = 'SELECT farm, SUM(kwSTD) as totalTarget, SUM(productKw) as totalProduct FROM biogas.biogasData';
+            let query = 'SELECT farm, SUM(kwSTD) as totalTarget, SUM(productKw) as totalProduct FROM biogas.biogasInput';
             let queryParams = [];
 
             // ตรวจสอบว่ามีการกรองตามช่วงวันที่หรือไม่
