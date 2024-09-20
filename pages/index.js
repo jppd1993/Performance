@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 
 export async function getServerSideProps() {
-    const res = await fetch('https://performance-kappa.vercel.app/api/getDropdownData/api/getDropdownData');
+    const res = await fetch('http://localhost:3000/api/getDropdownData');
     const data = await res.json();
 
     if (!data) {

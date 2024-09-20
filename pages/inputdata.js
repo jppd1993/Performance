@@ -1,58 +1,29 @@
 import { useState, useEffect } from 'react';
 
 export async function getServerSideProps() {
-    try {
-        const res = await fetch('https://performance-kappa.vercel.app/api/getDropdownData');
-        console.log("Response status: ", res.status); // แสดงสถานะการตอบกลับ
+    const res = await fetch('http://localhost:3000/api/getDropdownData');
+    const data = await res.json();
 
-        if (!res.ok) {
-            console.error(`Error: Failed to fetch data. Status code: ${res.status}`);
-            throw new Error(`HTTP error! status: ${res.status}`);
-        }
-
-        // ตรวจสอบประเภทของเนื้อหาก่อนแปลงเป็น JSON
-        const contentType = res.headers.get('content-type');
-        console.log("Content-Type: ", contentType); // แสดงประเภทของเนื้อหา
-
-        if (contentType && contentType.includes('application/json')) {
-            const data = await res.json();
-            console.log("Data received: ", data); // แสดงข้อมูลที่ดึงมา
-
-            if (!data) {
-                return {
-                    props: {
-                        farms: [],
-                        machines: []
-                    }
-                };
-            }
-
-            const { farms, machines } = data;
-
-            return {
-                props: {
-                    farms: farms || [],
-                    machines: machines || []
-                }
-            };
-        } else {
-            const errorText = await res.text();
-            console.error('Error: Response is not JSON', errorText);
-            throw new Error(`Unexpected response: ${errorText}`);
-        }
-    } catch (error) {
-        console.error('Error fetching data:', error);
+    if (!data) {
         return {
             props: {
                 farms: [],
-                machines: [],
-                error: 'เกิดข้อผิดพลาดในการดึงข้อมูล'
+                machines: []
             }
         };
     }
+
+    const { farms, machines } = data;
+
+    return {
+        props: {
+            farms: farms || [],
+            machines: machines || []
+        }
+    };
 }
 
-export default function Home({ farms, machines, error }) {
+export default function Home({ farms, machines }) {
     const [formData, setFormData] = useState({
         saveDate: '', // ใช้ saveDate แทนจาก fromDate และ toDate
         farm: 'CHTBR', // ตั้งค่า default ให้กับ Farm
@@ -77,9 +48,13 @@ export default function Home({ farms, machines, error }) {
         const productKw = formData.kwAfter - formData.kwBefore;
         const productValue = (productKw * formData.peaUnit).toFixed(2);
 
+        // สมมติว่า Standard Work Hours คำนวณได้จากจำนวนชั่วโมงในวัน หรือค่าคงที่ เช่น 24 ชั่วโมง
         const hrStd = 24; // แทนค่าจำนวนชั่วโมงทำงานมาตรฐานเป็น 24 ชั่วโมงต่อวัน
+
+        // คำนวณ Breakdown Hours (hrBreakdown) โดยใช้ Standard Work Hours ลบ Running Hours
         const hrBreakdown = hrStd - productHr;
 
+        // คำนวณ Standard Power Production (kwSTD) ตามสูตร [(Machine Type * 80 / 100) * Standard Work Hours]
         const kwSTD = (formData.machineType * 80 / 100) * hrStd;
 
         setFormData({
@@ -148,6 +123,7 @@ export default function Home({ farms, machines, error }) {
         }
 
         try {
+            // ส่งข้อมูลไปยัง backend
             const res = await fetch('/api/saveInput', {
                 method: 'POST',
                 headers: {
@@ -167,14 +143,15 @@ export default function Home({ farms, machines, error }) {
             alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         }
 
+        // ล้างค่าในฟอร์มหลังจาก submit สำเร็จ
         handleClear();
     };
 
     const handleClear = () => {
         setFormData({
             saveDate: '',
-            farm: 'CHTBR',
-            machineType: 550,
+            farm: 'CHTBR', // เคลียร์เป็นค่า default ของฟาร์ม
+            machineType: 550, // เคลียร์เป็นค่า default ของ Machine Type
             hrBefore: 0,
             hrAfter: 0,
             productHr: 0,
@@ -184,20 +161,18 @@ export default function Home({ farms, machines, error }) {
             kwSTD: 0,
             peaUnit: 0,
             productValue: 0,
-            hrStd: 0,
-            hrBreakdown: 0
+            hrStd: 0, // เคลียร์ค่า Standard Work Hours
+            hrBreakdown: 0 // เคลียร์ค่า Breakdown Hours
         });
 
-        setErrors({});
+        setErrors({}); // ล้างข้อผิดพลาด
     };
 
     return (
         <div className="container mt-5">
             <h1 className="text-center">Biogas Production Data Entry</h1>
-
-            {error && <div className="alert alert-danger">{error}</div>}
-
             <form onSubmit={handleSubmit}>
+                {/* ฟิลด์ข้อมูลที่สามารถกรอกได้ */}
                 <div className="row mb-3">
                     <div className="col-md-4">
                         <label htmlFor="saveDate" className="form-label">Save Date</label>
@@ -255,6 +230,7 @@ export default function Home({ farms, machines, error }) {
                     </div>
                 </div>
 
+                {/* ข้อมูลที่ไม่สามารถกรอกได้ */}
                 <div className="border mt-5 p-3" style={{ border: '2px solid black', borderRadius: '8px' }}>
                     <h5 className="text-center mb-4">ข้อมูลการคำนวณอัตโนมัติ</h5>
                     <div className="row mb-3">
@@ -287,6 +263,7 @@ export default function Home({ farms, machines, error }) {
                     </div>
                 </div>
 
+                {/* ปุ่ม Submit และ Clear ย้ายไปอยู่ล่างสุด */}
                 <div className="row justify-content-center mt-4">
                     <div className="col-md-6 text-center">
                         <button type="button" className="btn btn-secondary me-2" onClick={handleClear}>Clear</button>
