@@ -170,17 +170,17 @@ export default function Home({ farms, machines }) {
 
     return (
         <div className="container mt-5">
-            <h1 className="text-center">Biogas Production Data Entry</h1>
+            <h1 className="text-center">ระบบกรอกข้อมูล Biogas</h1>
             <form onSubmit={handleSubmit}>
                 {/* ฟิลด์ข้อมูลที่สามารถกรอกได้ */}
                 <div className="row mb-3">
                     <div className="col-md-4">
-                        <label htmlFor="saveDate" className="form-label">Save Date</label>
+                        <label htmlFor="saveDate" className="form-label">วันที่บันทึก</label>
                         <input type="date" className="form-control" id="saveDate" name="saveDate" value={formData.saveDate} onChange={handleChange} required />
                         {errors.saveDate && <p className="text-danger">{errors.saveDate}</p>}
                     </div>
                     <div className="col-md-4">
-                        <label htmlFor="farm" className="form-label">Farm</label>
+                        <label htmlFor="farm" className="form-label">ฟาร์ม</label>
                         <select className="form-select" id="farm" name="farm" value={formData.farm} onChange={handleChange} required>
                             {farms.map((farm, index) => (
                                 <option key={index} value={farm.farmShort}>{farm.farmShort}</option>
@@ -189,7 +189,7 @@ export default function Home({ farms, machines }) {
                         {errors.farm && <p className="text-danger">{errors.farm}</p>}
                     </div>
                     <div className="col-md-4">
-                        <label htmlFor="machineType" className="form-label">Machine Type</label>
+                        <label htmlFor="machineType" className="form-label">ประเภทเครื่องเจน(kw/h)</label>
                         <select className="form-select" id="machineType" name="machineType" value={formData.machineType} onChange={handleChange} required>
                             {machines.map((machine, index) => (
                                 <option key={index} value={machine.machineType}>{machine.machineType}</option>
@@ -201,17 +201,17 @@ export default function Home({ farms, machines }) {
 
                 <div className="row mb-3">
                     <div className="col-md-4">
-                        <label htmlFor="hrBefore" className="form-label">Previous Running Hours</label>
+                        <label htmlFor="hrBefore" className="form-label">เลขเดินเครื่องครั้งก่อน(จากเครื่อง)</label>
                         <input type="number" className="form-control" id="hrBefore" name="hrBefore" value={formData.hrBefore} onChange={handleChange} required />
                         {errors.hrBefore && <p className="text-danger">{errors.hrBefore}</p>}
                     </div>
                     <div className="col-md-4">
-                        <label htmlFor="hrAfter" className="form-label">Current Running Hours</label>
+                        <label htmlFor="hrAfter" className="form-label">เลขเดินเครื่องปัจจุบัน(จากเครื่อง)</label>
                         <input type="number" className="form-control" id="hrAfter" name="hrAfter" value={formData.hrAfter} onChange={handleChange} required />
                         {errors.hrAfter && <p className="text-danger">{errors.hrAfter}</p>}
                     </div>
                     <div className="col-md-4">
-                        <label htmlFor="kwBefore" className="form-label">Previous Power Production</label>
+                        <label htmlFor="kwBefore" className="form-label">เลขกระแสไฟฟ้าที่ผลิตได้ครั้งก่อน(จากเครื่อง)</label>
                         <input type="number" className="form-control" id="kwBefore" name="kwBefore" value={formData.kwBefore} onChange={handleChange} required />
                         {errors.kwBefore && <p className="text-danger">{errors.kwBefore}</p>}
                     </div>
@@ -219,12 +219,12 @@ export default function Home({ farms, machines }) {
 
                 <div className="row mb-3">
                     <div className="col-md-4">
-                        <label htmlFor="kwAfter" className="form-label">Current Power Production</label>
+                        <label htmlFor="kwAfter" className="form-label">เลขกระแสไฟฟ้าที่ผลิตได้ปัจจุบัน(จากเครื่อง)</label>
                         <input type="number" className="form-control" id="kwAfter" name="kwAfter" value={formData.kwAfter} onChange={handleChange} required />
                         {errors.kwAfter && <p className="text-danger">{errors.kwAfter}</p>}
                     </div>
                     <div className="col-md-4">
-                        <label htmlFor="peaUnit" className="form-label">PEA Unit</label>
+                        <label htmlFor="peaUnit" className="form-label">ราคาต่อหน่วย(ได้จากการไฟฟ้า)</label>
                         <input type="number" step="0.01" className="form-control" id="peaUnit" name="peaUnit" value={formData.peaUnit} onChange={handleChange} required />
                         {errors.peaUnit && <p className="text-danger">{errors.peaUnit}</p>}
                     </div>
