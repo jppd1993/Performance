@@ -201,17 +201,17 @@ export default function Home({ farms, machines }) {
 
                 <div className="row mb-3">
                     <div className="col-md-4">
-                        <label htmlFor="hrBefore" className="form-label">เลขเดินเครื่องครั้งก่อน(จากเครื่อง)</label>
+                        <label htmlFor="hrBefore" className="form-label">จำนวนชั่วโมงเดินเครื่องครั้งก่อน(Run Hours)</label>
                         <input type="number" className="form-control" id="hrBefore" name="hrBefore" value={formData.hrBefore} onChange={handleChange} required />
                         {errors.hrBefore && <p className="text-danger">{errors.hrBefore}</p>}
                     </div>
                     <div className="col-md-4">
-                        <label htmlFor="hrAfter" className="form-label">เลขเดินเครื่องปัจจุบัน(จากเครื่อง)</label>
+                        <label htmlFor="hrAfter" className="form-label">จำนวนชั่วโมงเดินเครื่องปัจจุบัน(Run Hours)</label>
                         <input type="number" className="form-control" id="hrAfter" name="hrAfter" value={formData.hrAfter} onChange={handleChange} required />
                         {errors.hrAfter && <p className="text-danger">{errors.hrAfter}</p>}
                     </div>
                     <div className="col-md-4">
-                        <label htmlFor="kwBefore" className="form-label">เลขกระแสไฟฟ้าที่ผลิตได้ครั้งก่อน(จากเครื่อง)</label>
+                        <label htmlFor="kwBefore" className="form-label">กำลังไฟฟ้าที่ผลิตได้ครั้งก่อน(kwh)</label>
                         <input type="number" className="form-control" id="kwBefore" name="kwBefore" value={formData.kwBefore} onChange={handleChange} required />
                         {errors.kwBefore && <p className="text-danger">{errors.kwBefore}</p>}
                     </div>
@@ -219,7 +219,7 @@ export default function Home({ farms, machines }) {
 
                 <div className="row mb-3">
                     <div className="col-md-4">
-                        <label htmlFor="kwAfter" className="form-label">เลขกระแสไฟฟ้าที่ผลิตได้ปัจจุบัน(จากเครื่อง)</label>
+                        <label htmlFor="kwAfter" className="form-label">กำลังไฟฟ้าที่ผลิตได้ปัจจุบัน(kwh)</label>
                         <input type="number" className="form-control" id="kwAfter" name="kwAfter" value={formData.kwAfter} onChange={handleChange} required />
                         {errors.kwAfter && <p className="text-danger">{errors.kwAfter}</p>}
                     </div>
