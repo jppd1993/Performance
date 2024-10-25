@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 
 export async function getServerSideProps() {
     // Fetch dropdown data for areas
-    const res = await fetch('http://localhost:3000/api/getAreaData');
+    const res = await fetch('https://performance-git-master-jatuphong-s-projects.vercel.app/api/getAreaData');
     const data = await res.json();
 
     if (!data) {
