@@ -15,46 +15,43 @@ export async function getServerSideProps({ query }) {
         const start = fromDate ? fromDate : moment().format('YYYY-MM-DD');
         const end = toDate ? toDate : moment().format('YYYY-MM-DD');
 
+        // แสดง query และพารามิเตอร์ใน log
+        console.log("Running query: SELECT * FROM grading.production WHERE inputDate BETWEEN '", start, "' AND '", end, "'");
+        
         // Query ข้อมูลโดยกรองตามช่วงวันที่ใน fromDate และ toDate
         const [rows] = await pool.query(
-            'SELECT * FROM biogas.biogasInput WHERE saveDate BETWEEN ? AND ?',
+            "SELECT * FROM grading.production WHERE inputDate BETWEEN ? AND ?",
             [start, end]
         );
 
         // แปลงวันที่จาก object เป็น string และจัดกลุ่มข้อมูลตามฟาร์ม
         const data = rows.map(row => ({
             ...row,
-            fromDate: moment(row.fromDate).format('YYYY-MM-DD'),
-            toDate: moment(row.toDate).format('YYYY-MM-DD')
+            inputDate: moment(row.inputDate).format('YYYY-MM-DD')
         }));
 
-        // จัดกลุ่มข้อมูลตามฟาร์มและรวมค่า kwSTD, productKw, productValue และ hrBreakdown
+        // จัดกลุ่มข้อมูลตามฟาร์มและรวมค่า MachineCap, product, และ lostTime
         const groupedData = data.reduce((acc, current) => {
-            const farm = current.farm;
+            const farm = current.shortArea;
             if (!acc[farm]) {
                 acc[farm] = {
-                    kwSTD: 0,
-                    productKw: 0,
-                    productValue: 0,
-                    hrBreakdown: 0,
-                    peaUnit: current.peaUnit || 0 // ใช้ peaUnit จากข้อมูลที่ส่งมา
+                    MachineCap: 0,
+                    product: 0,
+                    lostTime: 0
                 };
             }
-            acc[farm].kwSTD += current.kwSTD;
-            acc[farm].productKw += current.productKw;
-            acc[farm].productValue += current.productValue;
-            acc[farm].hrBreakdown += current.hrBreakdown; // เพิ่มค่า Breakdown Hours
+            acc[farm].MachineCap += current.machineCap;
+            acc[farm].product += current.product;
+            acc[farm].lostTime += current.lostTime; // เพิ่มค่า Breakdown Hours
             return acc;
         }, {});
 
         // แปลงข้อมูลที่จัดกลุ่มกลับเป็น array
         const aggregatedData = Object.keys(groupedData).map(farm => ({
-            farm,
-            kwSTD: groupedData[farm].kwSTD,
-            productKw: groupedData[farm].productKw,
-            productValue: groupedData[farm].productValue,
-            hrBreakdown: groupedData[farm].hrBreakdown,
-            peaUnit: groupedData[farm].peaUnit // เก็บค่า peaUnit ต่อฟาร์ม
+            shortArea: farm,
+            Cap: groupedData[farm].MachineCap,
+            product: groupedData[farm].product,
+            Breakdown: groupedData[farm].lostTime
         }));
 
         return {
@@ -78,23 +75,23 @@ export default function Report({ data, fromDate, toDate }) {
     const [from, setFrom] = useState(fromDate);
     const [to, setTo] = useState(toDate);
 
-    const totalKwSTD = data.reduce((sum, row) => sum + row.kwSTD, 0).toLocaleString();
-    const totalProductKw = data.reduce((sum, row) => sum + row.productKw, 0).toLocaleString();
-    const totalProductValue = Number(data.reduce((sum, row) => sum + row.productValue, 0).toFixed(2)).toLocaleString();
+    const totalMachineCap = data.reduce((sum, row) => sum + row.Cap, 0).toLocaleString();
+    const totalProduct = data.reduce((sum, row) => sum + row.product, 0).toLocaleString();
+    const totalBreakdown = data.reduce((sum, row) => sum + row.Breakdown, 0).toLocaleString();
 
     const chartData = {
-        labels: data.map(row => row.farm),
+        labels: data.map(row => row.shortArea),
         datasets: [
             {
-                label: 'Target (kW)',
-                data: data.map(row => row.kwSTD),
+                label: 'เป้าหมาย (ฟอง)',
+                data: data.map(row => row.Cap),
                 backgroundColor: 'rgba(75, 192, 192, 0.2)',
                 borderColor: 'rgba(75, 192, 192, 1)',
                 borderWidth: 1
             },
             {
-                label: 'Produced (kW)',
-                data: data.map(row => row.productKw),
+                label: 'ยอดผลิต (ฟอง)',
+                data: data.map(row => row.product),
                 backgroundColor: 'rgba(255, 99, 132, 0.2)',
                 borderColor: 'rgba(255, 99, 132, 1)',
                 borderWidth: 1
@@ -120,26 +117,24 @@ export default function Report({ data, fromDate, toDate }) {
                     const rowIndex = context.dataIndex;
                     const farmData = data[rowIndex];
 
-                    // คำนวณมูลค่าของ Target
-                    if (context.dataset.label === 'Target (kW)') {
-                        const targetValue = (farmData.peaUnit * farmData.kwSTD).toFixed(2);
-                        return `${value.toLocaleString()} kW\n${Number(targetValue).toLocaleString()} บาท`; // มูลค่า Target
+                    if (context.dataset.label === 'เป้าหมาย (ฟอง)') {
+                        return `${value.toLocaleString()} ฟอง`; // มูลค่า Target
                     }
 
                     // แสดงค่าของ Production พร้อมกับตรวจสอบว่า farm มี Breakdown Hours หรือไม่
-                    const breakdownText = farmData.hrBreakdown > 0
-                        ? `\nBreakdown: ${farmData.hrBreakdown} hrs` // แสดง Breakdown Hours
+                    const breakdownText = farmData.Breakdown > 0
+                        ? `\nBreakdown: ${farmData.Breakdown} mins` // แสดง Breakdown Hours
                         : '';
                     
-                    return `${value.toLocaleString()} kW\n${Number(farmData.productValue).toLocaleString()} บาท${breakdownText}`;
+                    return `${value.toLocaleString()} ฟอง${breakdownText}`;
                 },
                 textAlign: 'center',
                 color: (context) => {
-                    return context.dataset.label === 'Produced (kW)' && data[context.dataIndex].hrBreakdown > 0 ? 'red' : 'black'; // สีแดงถ้ามี Breakdown
+                    return context.dataset.label === 'ยอดผลิต (ฟอง)' && data[context.dataIndex].Breakdown > 0 ? 'red' : 'black'; // สีแดงถ้ามี Breakdown
                 },
                 font: {
                     weight: (context) => {
-                        return context.dataset.label === 'Produced (kW)' && data[context.dataIndex].hrBreakdown > 0 ? 'bold' : 'normal'; // ตัวหนาถ้ามี Breakdown
+                        return context.dataset.label === 'ยอดผลิต (ฟอง)' && data[context.dataIndex].Breakdown > 0 ? 'bold' : 'normal'; // ตัวหนาถ้ามี Breakdown
                     }
                 }
             }
@@ -155,7 +150,7 @@ export default function Report({ data, fromDate, toDate }) {
             y: {
                 title: {
                     display: true,
-                    text: 'kWh'
+                    text: 'ฟอง'
                 },
                 beginAtZero: true
             }
@@ -168,7 +163,7 @@ export default function Report({ data, fromDate, toDate }) {
 
     return (
         <div className="container mt-5" align='center'>
-            <h3 className="text-center">ภาพรวมประสิทธิภาพไบโอแก๊ส</h3>
+            <h3 className="text-center">ภาพรวมประสิทธิภาพเครื่องคัด</h3>
 
             {/* ส่วนของการกรองวันที่ */}
             <div className="mb-4">
@@ -198,15 +193,15 @@ export default function Report({ data, fromDate, toDate }) {
                 margin: '0 auto', 
                 textAlign: 'center' 
             }}>
-                <p style={{ margin: 0 }}>พลังงานทั้งหมด: {totalProductKw} kW</p>
-                <p style={{ margin: 0 }}>เป้าหมาย: {totalKwSTD} kW</p>
-                <p style={{ margin: 0 }}>มูลค่าทั้งหมด: {totalProductValue} บาท</p>
+                <p style={{ margin: 0 }}>ยอดผลิตทั้งหมด: {totalProduct} ฟอง</p>
+                <p style={{ margin: 0 }}>เป้าหมายทั้งหมด: {totalMachineCap} ฟอง</p>
+                <p style={{ margin: 0 }}>เวลาหยุดทำงานทั้งหมด: {totalBreakdown} นาที</p>
             </div>
             
             {data.length > 0 ? (
                 <Bar data={chartData} options={options} />
             ) : (
-                <p className="text-center">ไม่มีข้อมูลการผลิตไบโอแก๊ส</p>
+                <p className="text-center">ไม่มีข้อมูลการคัดไข่</p>
             )}
         </div>
     );
