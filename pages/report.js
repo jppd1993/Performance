@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Chart, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
-import ChartDataLabels from 'chartjs-plugin-datalabels'; // Import plugin
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { pool } from '../lib/dbt';
-import moment from 'moment'; // ใช้สำหรับจัดการวันที่
+import moment from 'moment';
+import Link from 'next/link';
+import { FaHome } from 'react-icons/fa';
 
-// Register the components with Chart.js, including ChartDataLabels
 Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
 
 export async function getServerSideProps({ query }) {
@@ -15,20 +16,17 @@ export async function getServerSideProps({ query }) {
         const start = fromDate ? fromDate : moment().format('YYYY-MM-DD');
         const end = toDate ? toDate : moment().format('YYYY-MM-DD');
 
-        // Query ข้อมูลโดยกรองตามช่วงวันที่ใน fromDate และ toDate
         const [rows] = await pool.query(
             'SELECT * FROM biogas.biogasInput WHERE saveDate BETWEEN ? AND ?',
             [start, end]
         );
 
-        // แปลงวันที่จาก object เป็น string และจัดกลุ่มข้อมูลตามฟาร์ม
         const data = rows.map(row => ({
             ...row,
             fromDate: moment(row.fromDate).format('YYYY-MM-DD'),
             toDate: moment(row.toDate).format('YYYY-MM-DD')
         }));
 
-        // จัดกลุ่มข้อมูลตามฟาร์มและรวมค่า kwSTD, productKw, productValue และ hrBreakdown
         const groupedData = data.reduce((acc, current) => {
             const farm = current.farm;
             if (!acc[farm]) {
@@ -37,24 +35,23 @@ export async function getServerSideProps({ query }) {
                     productKw: 0,
                     productValue: 0,
                     hrBreakdown: 0,
-                    peaUnit: current.peaUnit || 0 // ใช้ peaUnit จากข้อมูลที่ส่งมา
+                    peaUnit: current.peaUnit || 0
                 };
             }
             acc[farm].kwSTD += current.kwSTD;
             acc[farm].productKw += current.productKw;
             acc[farm].productValue += current.productValue;
-            acc[farm].hrBreakdown += current.hrBreakdown; // เพิ่มค่า Breakdown Hours
+            acc[farm].hrBreakdown += current.hrBreakdown;
             return acc;
         }, {});
 
-        // แปลงข้อมูลที่จัดกลุ่มกลับเป็น array
         const aggregatedData = Object.keys(groupedData).map(farm => ({
             farm,
             kwSTD: groupedData[farm].kwSTD,
             productKw: groupedData[farm].productKw,
             productValue: groupedData[farm].productValue,
             hrBreakdown: groupedData[farm].hrBreakdown,
-            peaUnit: groupedData[farm].peaUnit // เก็บค่า peaUnit ต่อฟาร์ม
+            peaUnit: groupedData[farm].peaUnit
         }));
 
         return {
@@ -120,26 +117,24 @@ export default function Report({ data, fromDate, toDate }) {
                     const rowIndex = context.dataIndex;
                     const farmData = data[rowIndex];
 
-                    // คำนวณมูลค่าของ Target
                     if (context.dataset.label === 'Target (kW)') {
                         const targetValue = (farmData.peaUnit * farmData.kwSTD).toFixed(2);
-                        return `${value.toLocaleString()} kW\n${Number(targetValue).toLocaleString()} บาท`; // มูลค่า Target
+                        return `${value.toLocaleString()} kW\n${Number(targetValue).toLocaleString()} บาท`;
                     }
 
-                    // แสดงค่าของ Production พร้อมกับตรวจสอบว่า farm มี Breakdown Hours หรือไม่
                     const breakdownText = farmData.hrBreakdown > 0
-                        ? `\nBreakdown: ${farmData.hrBreakdown} hrs` // แสดง Breakdown Hours
+                        ? `\nBreakdown: ${farmData.hrBreakdown} hrs`
                         : '';
                     
                     return `${value.toLocaleString()} kW\n${Number(farmData.productValue).toLocaleString()} บาท${breakdownText}`;
                 },
                 textAlign: 'center',
                 color: (context) => {
-                    return context.dataset.label === 'Produced (kW)' && data[context.dataIndex].hrBreakdown > 0 ? 'red' : 'black'; // สีแดงถ้ามี Breakdown
+                    return context.dataset.label === 'Produced (kW)' && data[context.dataIndex].hrBreakdown > 0 ? 'red' : 'black';
                 },
                 font: {
                     weight: (context) => {
-                        return context.dataset.label === 'Produced (kW)' && data[context.dataIndex].hrBreakdown > 0 ? 'bold' : 'normal'; // ตัวหนาถ้ามี Breakdown
+                        return context.dataset.label === 'Produced (kW)' && data[context.dataIndex].hrBreakdown > 0 ? 'bold' : 'normal';
                     }
                 }
             }
@@ -167,11 +162,19 @@ export default function Report({ data, fromDate, toDate }) {
     };
 
     return (
-        <div className="container mt-5" align='center'>
+        <div className="container mt-5">
+            {/* ปุ่ม Home ในกรอบขาว */}
+            <div className="text-start mb-3">
+                <Link href="https://performance-git-master-jatuphong-s-projects.vercel.app/menu" passHref>
+                    <button type="button" className="btn btn-dark text-white">
+                        <FaHome /> Home
+                    </button>
+                </Link>
+            </div>
+
             <h3 className="text-center">ภาพรวมประสิทธิภาพไบโอแก๊ส</h3>
 
-            {/* ส่วนของการกรองวันที่ */}
-            <div className="mb-4">
+            <div className="text-center mb-4">
                 <label>จากวันที่: </label>
                 <input 
                     type="date" 
@@ -187,20 +190,21 @@ export default function Report({ data, fromDate, toDate }) {
                 <button onClick={handleFilter} className="btn btn-primary">กรองข้อมูล</button>
             </div>
             
-            {/* แสดงตัวเลขผลรวมทั้งหมดในกรอบสี่เหลี่ยม */}
-            <div className="text-center mb-4" style={{
-                border: '2px solid black', 
-                display: 'inline-block', 
-                padding: '10px', 
-                fontWeight: 'bold', 
-                lineHeight: '1.2',
-                borderRadius: '8px',
-                margin: '0 auto', 
-                textAlign: 'center' 
-            }}>
-                <p style={{ margin: 0 }}>พลังงานทั้งหมด: {totalProductKw} kW</p>
-                <p style={{ margin: 0 }}>เป้าหมาย: {totalKwSTD} kW</p>
-                <p style={{ margin: 0 }}>มูลค่าทั้งหมด: {totalProductValue} บาท</p>
+            {/* กรอบสรุปที่อยู่ตรงกลาง */}
+            <div className="d-flex justify-content-center">
+                <div className="text-center mb-4" style={{
+                    border: '2px solid black', 
+                    display: 'inline-block', 
+                    padding: '10px', 
+                    fontWeight: 'bold', 
+                    lineHeight: '1.2',
+                    borderRadius: '8px',
+                    textAlign: 'center' 
+                }}>
+                    <p style={{ margin: 0 }}>พลังงานทั้งหมด: {totalProductKw} kW</p>
+                    <p style={{ margin: 0 }}>เป้าหมาย: {totalKwSTD} kW</p>
+                    <p style={{ margin: 0 }}>มูลค่าทั้งหมด: {totalProductValue} บาท</p>
+                </div>
             </div>
             
             {data.length > 0 ? (

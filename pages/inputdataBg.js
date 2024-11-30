@@ -27,64 +27,36 @@ export async function getServerSideProps() {
 
 export default function Home({ farms, machines }) {
     const [formData, setFormData] = useState({
-        saveDate: '',
-        farm: 'CHTBR',
-        machineType: 550,
+        saveDate: '', // ใช้ saveDate แทนจาก fromDate และ toDate
+        farm: 'CHTBR', // ตั้งค่า default ให้กับ Farm
+        machineType: 550, // ตั้งค่า default ให้กับ Machine Type
         hrBefore: 0,
         hrAfter: 0,
         productHr: 0,
         kwBefore: 0,
         kwAfter: 0,
         productKw: 0,
-        kwSTD: 0,
+        kwSTD: 0, // Standard Power Production
         peaUnit: 0,
         productValue: 0,
-        hrStd: 0,
-        hrBreakdown: 0
+        hrStd: 0, // Standard Work Hours (ตั้งต้นไว้ที่ 0)
+        hrBreakdown: 0 // Breakdown Hours
     });
 
-    const [errors, setErrors] = useState({});
-
-    useEffect(() => {
-        const fetchPreviousData = async () => {
-            if (!formData.saveDate || !formData.farm || !formData.machineType) return;
-
-            const previousDate = new Date(formData.saveDate);
-            previousDate.setDate(previousDate.getDate() - 1);
-            const formattedPreviousDate = previousDate.toISOString().split('T')[0];
-
-            try {
-                const res = await fetch(`/api/getPreviousData?date=${formattedPreviousDate}&farm=${formData.farm}&machineType=${formData.machineType}`);
-                const data = await res.json();
-
-                if (data.hrAfter !== undefined && data.kwAfter !== undefined) {
-                    setFormData(prevFormData => ({
-                        ...prevFormData,
-                        hrBefore: data.hrAfter,
-                        kwBefore: data.kwAfter
-                    }));
-                } else {
-                    setFormData(prevFormData => ({
-                        ...prevFormData,
-                        hrBefore: 0,
-                        kwBefore: 0
-                    }));
-                }
-            } catch (error) {
-                console.error("Error fetching previous data:", error);
-            }
-        };
-
-        fetchPreviousData();
-    }, [formData.saveDate, formData.farm, formData.machineType]);
+    const [errors, setErrors] = useState({}); // ใช้สำหรับเก็บข้อผิดพลาดของฟิลด์ต่างๆ
 
     useEffect(() => {
         const productHr = formData.hrAfter - formData.hrBefore;
         const productKw = formData.kwAfter - formData.kwBefore;
         const productValue = (productKw * formData.peaUnit).toFixed(2);
 
-        const hrStd = 24;
+        // สมมติว่า Standard Work Hours คำนวณได้จากจำนวนชั่วโมงในวัน หรือค่าคงที่ เช่น 24 ชั่วโมง
+        const hrStd = 24; // แทนค่าจำนวนชั่วโมงทำงานมาตรฐานเป็น 24 ชั่วโมงต่อวัน
+
+        // คำนวณ Breakdown Hours (hrBreakdown) โดยใช้ Standard Work Hours ลบ Running Hours
         const hrBreakdown = hrStd - productHr;
+
+        // คำนวณ Standard Power Production (kwSTD) ตามสูตร [(Machine Type * 80 / 100) * Standard Work Hours]
         const kwSTD = (formData.machineType * 80 / 100) * hrStd;
 
         setFormData({
@@ -108,6 +80,7 @@ export default function Home({ farms, machines }) {
 
         let newErrors = {};
 
+        // ตรวจสอบว่าค่าที่สำคัญถูกกรอกหรือไม่
         if (!formData.saveDate) {
             newErrors.saveDate = 'กรุณาระบุวันบันทึกข้อมูล';
         }
@@ -117,8 +90,14 @@ export default function Home({ farms, machines }) {
         if (!formData.machineType) {
             newErrors.machineType = 'กรุณาเลือกประเภทเครื่องเจน';
         }
+        if (formData.hrBefore === '') {
+            newErrors.hrBefore = 'กรุณาระบุค่า Previous Running Hours';
+        }
         if (formData.hrAfter === '') {
             newErrors.hrAfter = 'กรุณาระบุค่า Current Running Hours';
+        }
+        if (formData.kwBefore === '') {
+            newErrors.kwBefore = 'กรุณาระบุค่า Previous Power Production';
         }
         if (formData.kwAfter === '') {
             newErrors.kwAfter = 'กรุณาระบุค่า Current Power Production';
@@ -127,6 +106,7 @@ export default function Home({ farms, machines }) {
             newErrors.peaUnit = 'กรุณาระบุค่า PEA Unit';
         }
 
+        // ตรวจสอบว่า PEA Unit, Current Running Hours, และ Current Power Production ต้องไม่เป็น 0
         if (formData.peaUnit == 0) {
             newErrors.peaUnit = 'PEA Unit ต้องไม่เป็น 0';
         }
@@ -139,11 +119,13 @@ export default function Home({ farms, machines }) {
 
         setErrors(newErrors);
 
+        // ถ้ามีข้อผิดพลาด ให้หยุดการส่งฟอร์ม
         if (Object.keys(newErrors).length > 0) {
             return;
         }
 
         try {
+            // ส่งข้อมูลไปยัง backend
             const res = await fetch('/api/saveInput', {
                 method: 'POST',
                 headers: {
@@ -163,14 +145,15 @@ export default function Home({ farms, machines }) {
             alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         }
 
+        // ล้างค่าในฟอร์มหลังจาก submit สำเร็จ
         handleClear();
     };
 
     const handleClear = () => {
         setFormData({
             saveDate: '',
-            farm: 'CHTBR',
-            machineType: 550,
+            farm: 'CHTBR', // เคลียร์เป็นค่า default ของฟาร์ม
+            machineType: 550, // เคลียร์เป็นค่า default ของ Machine Type
             hrBefore: 0,
             hrAfter: 0,
             productHr: 0,
@@ -180,17 +163,18 @@ export default function Home({ farms, machines }) {
             kwSTD: 0,
             peaUnit: 0,
             productValue: 0,
-            hrStd: 0,
-            hrBreakdown: 0
+            hrStd: 0, // เคลียร์ค่า Standard Work Hours
+            hrBreakdown: 0 // เคลียร์ค่า Breakdown Hours
         });
 
-        setErrors({});
+        setErrors({}); // ล้างข้อผิดพลาด
     };
 
     return (
         <div className="container mt-5">
             <h1 className="text-center">ระบบกรอกข้อมูล Biogas</h1>
             <form onSubmit={handleSubmit}>
+                {/* ฟิลด์ข้อมูลที่สามารถกรอกได้ */}
                 <div className="row mb-3">
                     <div className="col-md-4">
                         <label htmlFor="saveDate" className="form-label">วันที่บันทึก</label>
@@ -219,10 +203,23 @@ export default function Home({ farms, machines }) {
 
                 <div className="row mb-3">
                     <div className="col-md-4">
+                        <label htmlFor="hrBefore" className="form-label">จำนวนชั่วโมงเดินเครื่องครั้งก่อน(Run Hours)</label>
+                        <input type="number" className="form-control" id="hrBefore" name="hrBefore" value={formData.hrBefore} onChange={handleChange} required />
+                        {errors.hrBefore && <p className="text-danger">{errors.hrBefore}</p>}
+                    </div>
+                    <div className="col-md-4">
                         <label htmlFor="hrAfter" className="form-label">จำนวนชั่วโมงเดินเครื่องปัจจุบัน(Run Hours)</label>
                         <input type="number" className="form-control" id="hrAfter" name="hrAfter" value={formData.hrAfter} onChange={handleChange} required />
                         {errors.hrAfter && <p className="text-danger">{errors.hrAfter}</p>}
                     </div>
+                    <div className="col-md-4">
+                        <label htmlFor="kwBefore" className="form-label">กำลังไฟฟ้าที่ผลิตได้ครั้งก่อน(kwh)</label>
+                        <input type="number" className="form-control" id="kwBefore" name="kwBefore" value={formData.kwBefore} onChange={handleChange} required />
+                        {errors.kwBefore && <p className="text-danger">{errors.kwBefore}</p>}
+                    </div>
+                </div>
+
+                <div className="row mb-3">
                     <div className="col-md-4">
                         <label htmlFor="kwAfter" className="form-label">กำลังไฟฟ้าที่ผลิตได้ปัจจุบัน(kwh)</label>
                         <input type="number" className="form-control" id="kwAfter" name="kwAfter" value={formData.kwAfter} onChange={handleChange} required />
@@ -235,23 +232,14 @@ export default function Home({ farms, machines }) {
                     </div>
                 </div>
 
+                {/* ข้อมูลที่ไม่สามารถกรอกได้ */}
                 <div className="border mt-5 p-3" style={{ border: '2px solid black', borderRadius: '8px' }}>
                     <h5 className="text-center mb-4">ข้อมูลการคำนวณอัตโนมัติ</h5>
                     <div className="row mb-3">
                         <div className="col-md-4">
-                            <label htmlFor="hrBefore" className="form-label">จำนวนชั่วโมงเดินเครื่องครั้งก่อน(Run Hours)</label>
-                            <input type="number" className="form-control" id="hrBefore" name="hrBefore" value={formData.hrBefore} readOnly />
-                        </div>
-                        <div className="col-md-4">
-                            <label htmlFor="kwBefore" className="form-label">กำลังไฟฟ้าที่ผลิตได้ครั้งก่อน(kwh)</label>
-                            <input type="number" className="form-control" id="kwBefore" name="kwBefore" value={formData.kwBefore} readOnly />
-                        </div>
-                        <div className="col-md-4">
                             <label htmlFor="productHr" className="form-label">Running Hours</label>
                             <input type="number" className="form-control" id="productHr" name="productHr" value={formData.productHr} readOnly />
                         </div>
-                    </div>
-                    <div className="row mb-3">
                         <div className="col-md-4">
                             <label htmlFor="productKw" className="form-label">Power Produced</label>
                             <input type="number" className="form-control" id="productKw" name="productKw" value={formData.productKw} readOnly />
@@ -260,12 +248,12 @@ export default function Home({ farms, machines }) {
                             <label htmlFor="kwSTD" className="form-label">Standard Power Production</label>
                             <input type="number" className="form-control" id="kwSTD" name="kwSTD" value={formData.kwSTD} readOnly />
                         </div>
+                    </div>
+                    <div className="row mb-3">
                         <div className="col-md-4">
                             <label htmlFor="productValue" className="form-label">Power Value</label>
                             <input type="number" className="form-control" id="productValue" name="productValue" value={formData.productValue} readOnly />
                         </div>
-                    </div>
-                    <div className="row mb-3">
                         <div className="col-md-4">
                             <label htmlFor="hrStd" className="form-label">Standard Work Hours</label>
                             <input type="number" className="form-control" id="hrStd" name="hrStd" value={formData.hrStd} readOnly />
@@ -277,6 +265,7 @@ export default function Home({ farms, machines }) {
                     </div>
                 </div>
 
+                {/* ปุ่ม Submit และ Clear ย้ายไปอยู่ล่างสุด */}
                 <div className="row justify-content-center mt-4">
                     <div className="col-md-6 text-center">
                         <button type="button" className="btn btn-secondary me-2" onClick={handleClear}>Clear</button>
