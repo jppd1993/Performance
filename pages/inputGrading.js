@@ -217,7 +217,7 @@ export default function GradingDataEntry({ areas }) {
                     </div>
                 </div>
 
-                {/* แถวสำหรับปุ่ม Home */}
+                {/* แถวสำหรับปุ่ม Home
                 <div className="row justify-content-center mt-3">
                     <div className="col-md-2 text-center">
                         <Link href="https://performance-git-master-jatuphong-s-projects.vercel.app/menu" passHref>
@@ -226,7 +226,7 @@ export default function GradingDataEntry({ areas }) {
                             </button>
                         </Link>
                     </div>
-                </div>
+                </div> */}
 
             </form>
         </div>

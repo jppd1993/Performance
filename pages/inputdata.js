@@ -283,7 +283,7 @@ export default function Home({ farms, machines }) {
                         <button type="submit" className="btn btn-primary">Submit</button>
                     </div>
                 </div>
-                <div className="row justify-content-center mt-3">
+                {/* <div className="row justify-content-center mt-3">
                     <div className="col-md-2 text-center">
                         <Link href="https://performance-git-master-jatuphong-s-projects.vercel.app/menu" passHref>
                             <button type="button" className="btn btn-dark text-white">
@@ -291,7 +291,7 @@ export default function Home({ farms, machines }) {
                             </button>
                         </Link>
                     </div>
-                </div>
+                </div> */}
             </form>
         </div>
     );

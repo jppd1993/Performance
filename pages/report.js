@@ -164,13 +164,13 @@ export default function Report({ data, fromDate, toDate }) {
     return (
         <div className="container mt-5">
             {/* ปุ่ม Home ในกรอบขาว */}
-            <div className="text-start mb-3">
+            {/* <div className="text-start mb-3">
                 <Link href="https://performance-git-master-jatuphong-s-projects.vercel.app/menu" passHref>
                     <button type="button" className="btn btn-dark text-white">
                         <FaHome /> Home
                     </button>
                 </Link>
-            </div>
+            </div> */}
 
             <h3 className="text-center">ภาพรวมประสิทธิภาพไบโอแก๊ส</h3>
 
