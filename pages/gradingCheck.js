@@ -57,13 +57,13 @@ export default function GradingCheck() {
     return (
         <div className="container mt-5">
             {/* Home Button */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
                 <Link href="https://performance-git-master-jatuphong-s-projects.vercel.app/menu" passHref>
                     <button className="btn btn-dark">
                         <FaHome /> Home
                     </button>
                 </Link>
-            </div>
+            </div> */}
 
             <h1 className="text-center">ตรวจสอบข้อมูลการคัด</h1>
 
