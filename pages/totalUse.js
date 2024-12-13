@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Pie } from "react-chartjs-2";
+import Link from 'next/link';
+
 import {
   Chart as ChartJS,
   ArcElement,
@@ -198,18 +200,20 @@ export default function TotalUse() {
             </tbody>
           </table>
 
-          {/* ลิงก์ไปหน้ารายงานพลังงานรายฟาร์ม */}
-          <div className="text-center mt-4 d-flex justify-content-center gap-3">
-            <a href="/farmEnergyReport" className="btn btn-primary">
-              รายงานการใช้พลังงานรายฟาร์ม
-            </a>
-            <a href="/waterReport" className="btn btn-primary">
-              รายงานข้อมูลคุณภาพน้ำ
-            </a>
-            <a href="/ghgReport" className="btn btn-primary">
-              รายงานข้อมูล GHG
-            </a>
+          {/* ลิงก์ไปหน้ารายงานต่าง ๆ */} 
+          <div className="text-center mt-4">
+            <Link href="/farmEnergyReport" passHref>
+              <button className="btn btn-primary mx-2">รายงานการใช้พลังงานรายฟาร์ม</button>
+            </Link>
+            <Link href="/waterReport" passHref>
+              <button className="btn btn-primary mx-2">รายงานคุณภาพน้ำ</button>
+            </Link>
+            <Link href="/ghgReport" passHref>
+              <button className="btn btn-primary mx-2">รายงาน GHG</button>
+            </Link>
           </div>
+
+
         </div>
       </div>
     </div>
