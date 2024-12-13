@@ -1,14 +1,14 @@
-import { useEffect, useState } from 'react';
-import { Pie } from 'react-chartjs-2';
+import { useEffect, useState } from "react";
+import { Pie } from "react-chartjs-2";
 import {
-  Chart,
+  Chart as ChartJS,
   ArcElement,
   Tooltip,
   Legend,
   Title,
-} from 'chart.js';
-import ChartDataLabels from 'chartjs-plugin-datalabels'; // Import plugin for labels
-Chart.register(ArcElement, Tooltip, Legend, Title, ChartDataLabels);
+} from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels"; // Import plugin for labels
+ChartJS.register(ArcElement, Tooltip, Legend, Title, ChartDataLabels);
 
 export default function TotalUse() {
   const [data, setData] = useState([]);
@@ -18,7 +18,7 @@ export default function TotalUse() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/getElectricityData');
+        const response = await fetch("/api/getElectricityData");
         const result = await response.json();
         setData(result);
 
@@ -42,28 +42,48 @@ export default function TotalUse() {
         );
 
         setChartData({
-          labels: ['Biogas', 'Solar', 'PEA'],
+          labels: ["Biogas", "Solar", "PEA"],
           datasets: [
             {
               data: [totalBiogas, totalSolar, totalPea],
-              backgroundColor: ['#36A2EB', '#4BC0C0', '#9966FF'], // สีที่ระบุ
-              hoverBackgroundColor: ['#36A2EB', '#4BC0C0', '#9966FF'],
+              backgroundColor: ["#36A2EB", "#4BC0C0", "#9966FF"], // สีที่ระบุ
+              hoverBackgroundColor: ["#36A2EB", "#4BC0C0", "#9966FF"],
             },
           ],
         });
       } catch (error) {
-        console.error('Error fetching electricity data:', error);
+        console.error("Error fetching electricity data:", error);
       }
     };
 
     fetchData();
   }, []);
 
-  // ฟังก์ชันสำหรับแปลง yearMonth เป็นเดือนแบบย่อ (Jan, Feb, ...)
+  // ฟังก์ชันสำหรับแปลง yearMonth เป็นเดือนแบบย่อ (ม.ค., ก.พ., ...)
   const formatMonth = (yearMonth) => {
-    const [year, month] = yearMonth.split('-');
+    const [year, month] = yearMonth.split("-");
     const date = new Date(`${year}-${month}-01`);
-    return new Intl.DateTimeFormat('en-US', { month: 'short' }).format(date);
+
+    if (isNaN(date)) return yearMonth; // Return original if invalid date
+
+    const months = [
+      "ม.ค.",
+      "ก.พ.",
+      "มี.ค.",
+      "เม.ย.",
+      "พ.ค.",
+      "มิ.ย.",
+      "ก.ค.",
+      "ส.ค.",
+      "ก.ย.",
+      "ต.ค.",
+      "พ.ย.",
+      "ธ.ค.",
+    ];
+    const thaiMonth = months[date.getMonth()];
+    const thaiYear = date.getFullYear() -2500; // Convert to Buddhist Era (BE)
+
+    return `${thaiMonth} ${thaiYear}`;
   };
 
   return (
@@ -89,7 +109,7 @@ export default function TotalUse() {
                     },
                   },
                   legend: {
-                    position: 'top',
+                    position: "top",
                   },
                   datalabels: {
                     formatter: (value, context) => {
@@ -100,9 +120,9 @@ export default function TotalUse() {
                       const percentage = ((value / total) * 100).toFixed(2);
                       return `${percentage}%`;
                     },
-                    color: '#fff',
+                    color: "#fff",
                     font: {
-                      weight: 'bold',
+                      weight: "bold",
                       size: 16,
                     },
                   },
@@ -124,14 +144,18 @@ export default function TotalUse() {
                 <th>Biogas (kW)</th>
                 <th>Solar (kW)</th>
                 <th>PEA (kW)</th>
-                <th>ค่าไฟเฉลี่ย (บาท)</th>
+                <th>ค่าไฟ (บาท)</th>
                 <th>มูลค่ารวม (บาท)</th>
               </tr>
             </thead>
             <tbody>
               {data.map((row, index) => (
                 <tr key={index}>
-                  <td>{formatMonth(row.yearMonth)}</td>
+                  <td>
+                    <a href={`/monthlyGraph?month=${row.yearMonth}`}>
+                      {formatMonth(row.yearMonth)}
+                    </a>
+                  </td>
                   <td>{row.totalBiogasProduction.toLocaleString()}</td>
                   <td>{row.totalSolarProduction.toLocaleString()}</td>
                   <td>{row.totalPeaEUse.toLocaleString()}</td>
@@ -173,6 +197,19 @@ export default function TotalUse() {
               </tr>
             </tbody>
           </table>
+
+          {/* ลิงก์ไปหน้ารายงานพลังงานรายฟาร์ม */}
+          <div className="text-center mt-4 d-flex justify-content-center gap-3">
+            <a href="/farmEnergyReport" className="btn btn-primary">
+              รายงานการใช้พลังงานรายฟาร์ม
+            </a>
+            <a href="/waterReport" className="btn btn-primary">
+              รายงานข้อมูลคุณภาพน้ำ
+            </a>
+            <a href="/ghgReport" className="btn btn-primary">
+              รายงานข้อมูล GHG
+            </a>
+          </div>
         </div>
       </div>
     </div>
