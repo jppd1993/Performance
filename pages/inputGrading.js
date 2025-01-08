@@ -44,18 +44,29 @@ export default function GradingDataEntry({ areas }) {
     const [showBreakdownFields, setShowBreakdownFields] = useState(false);
 
     useEffect(() => {
-        const machineCap = formData.shortArea === 'BN'
-            ? formData.workTime * 2000
-            : formData.shortArea === 'CHN'
-            ? formData.workTime * 2400
-            : formData.workTime * 1000;
+        // คำนวณ machineCap และ productPerformance
+        const calculateMachineCap = () => {
+            if (!formData.workTime || !formData.shortArea) return 0;
+            if (formData.shortArea === 'BN') {
+                return formData.workTime * 2000;
+            } else if (formData.shortArea === 'CHN') {
+                return formData.workTime * 2400;
+            }
+            return formData.workTime * 1000;
+        };
 
-        const productPerformance = machineCap ? ((formData.product * 100) / machineCap).toFixed(2) : 0;
+        const calculatePerformance = (machineCap) => {
+            if (!machineCap || !formData.product) return 0;
+            return ((formData.product * 100) / machineCap).toFixed(2);
+        };
 
-        setFormData(prevFormData => ({
+        const newMachineCap = calculateMachineCap();
+        const newProductPerformance = calculatePerformance(newMachineCap);
+
+        setFormData((prevFormData) => ({
             ...prevFormData,
-            machineCap,
-            productPerformance
+            machineCap: newMachineCap,
+            productPerformance: newProductPerformance,
         }));
     }, [formData.workTime, formData.product, formData.shortArea]);
 
@@ -85,6 +96,8 @@ export default function GradingDataEntry({ areas }) {
         if (Object.keys(newErrors).length > 0) return;
 
         try {
+            console.log('FormData before submit:', formData);
+
             const res = await fetch('/api/saveGradingData', {
                 method: 'POST',
                 headers: {
@@ -98,7 +111,7 @@ export default function GradingDataEntry({ areas }) {
             const result = await res.json();
             alert(result.message);
         } catch (error) {
-            console.error("Error occurred while submitting:", error);
+            console.error('Error occurred while submitting:', error);
             alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
         }
 
@@ -209,25 +222,12 @@ export default function GradingDataEntry({ areas }) {
                     </div>
                 )}
 
-                {/* แถวสำหรับปุ่ม Clear และ Submit */}
                 <div className="row justify-content-center mt-4">
                     <div className="col-md-6 text-center">
                         <button type="button" className="btn btn-secondary me-2" onClick={handleClear}>Clear</button>
                         <button type="submit" className="btn btn-primary">Submit</button>
                     </div>
                 </div>
-
-                {/* แถวสำหรับปุ่ม Home
-                <div className="row justify-content-center mt-3">
-                    <div className="col-md-2 text-center">
-                        <Link href="https://performance-git-master-jatuphong-s-projects.vercel.app/menu" passHref>
-                            <button type="button" className="btn btn-dark text-white">
-                                <FaHome /> Home
-                            </button>
-                        </Link>
-                    </div>
-                </div> */}
-
             </form>
         </div>
     );
