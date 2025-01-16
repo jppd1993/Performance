@@ -20,7 +20,8 @@ export default async function handler(req, res) {
                 peaUnit,
                 productValue,
                 hrStd,
-                hrBreakdown
+                hrBreakdown,
+                machineNo
             } = req.body;
 
             // ตรวจสอบว่าค่าที่จำเป็นถูกส่งมาครบถ้วนหรือไม่
@@ -30,7 +31,7 @@ export default async function handler(req, res) {
 
             // บันทึกข้อมูลลงฐานข้อมูล
             const [result] = await pool.query(
-                'INSERT INTO biogas.biogasInput (saveDate, farm, machineType, hrBefore, hrAfter, productHr, kwBefore, kwAfter, productKw, kwSTD, peaUnit, productValue, hrStd, hrBreakdown) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                'INSERT INTO biogas.biogasInput (saveDate, farm, machineType, hrBefore, hrAfter, productHr, kwBefore, kwAfter, productKw, kwSTD, peaUnit, productValue, hrStd, hrBreakdown , machineNo) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
                 [
                     saveDate,
                     farm,
@@ -45,7 +46,8 @@ export default async function handler(req, res) {
                     peaUnit,
                     productValue,
                     hrStd,
-                    hrBreakdown
+                    hrBreakdown,
+                    machineNo
                 ]
             );
 

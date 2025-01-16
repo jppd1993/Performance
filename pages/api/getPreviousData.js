@@ -1,17 +1,17 @@
 import { query } from '../../lib/db';
 
 export default async function handler(req, res) {
-    const { date, farm, machineType } = req.query;
+    const { date, farm, machineType, machineNo } = req.query;
 
-    if (!date || !farm || !machineType) {
+    if (!date || !farm || !machineType || !machineNo) {
         return res.status(400).json({ error: 'Missing required query parameters' });
     }
 
     try {
         // Query to get hrAfter and kwAfter from the previous day's data
         const results = await query(
-            'SELECT hrAfter, kwAfter FROM biogas.biogasInput WHERE saveDate = ? AND farm = ? AND machineType = ? ORDER BY saveDate DESC LIMIT 1',
-            [date, farm, machineType]
+            'SELECT hrAfter, kwAfter FROM biogas.biogasInput WHERE saveDate = ? AND farm = ? AND machineType = ? AND machineNo = ? ORDER BY saveDate DESC LIMIT 1',
+            [date, farm, machineType,machineNo]
         );
 
         if (results.length > 0) {

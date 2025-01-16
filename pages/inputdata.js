@@ -10,22 +10,26 @@ export async function getServerSideProps() {
         return {
             props: {
                 farms: [],
-                machines: []
+                machines: [],
+                machinesNo: []
             }
         };
     }
 
-    const { farms, machines } = data;
+    const { farms, machines, machinesNo = [{ machineNum:1},{ machineNum:2},{ machineNum:3},{ machineNum:4},{ machineNum:5}
+
+    ]} = data;
 
     return {
         props: {
             farms: farms || [],
-            machines: machines || []
+            machines: machines || [],
+            machinesNo
         }
     };
 }
 
-export default function Home({ farms, machines }) {
+export default function Home({ farms, machines, machinesNo }) {
     const [formData, setFormData] = useState({
         saveDate: '',
         farm: 'CHTBR',
@@ -40,21 +44,22 @@ export default function Home({ farms, machines }) {
         peaUnit: 0,
         productValue: 0,
         hrStd: 0,
-        hrBreakdown: 0
+        hrBreakdown: 0,
+        machineNo: 1
     });
 
     const [errors, setErrors] = useState({});
 
     useEffect(() => {
         const fetchPreviousData = async () => {
-            if (!formData.saveDate || !formData.farm || !formData.machineType) return;
+            if (!formData.saveDate || !formData.farm || !formData.machineType || !formData.machineNo) return;
 
             const previousDate = new Date(formData.saveDate);
             previousDate.setDate(previousDate.getDate() - 1);
             const formattedPreviousDate = previousDate.toISOString().split('T')[0];
 
             try {
-                const res = await fetch(`/api/getPreviousData?date=${formattedPreviousDate}&farm=${formData.farm}&machineType=${formData.machineType}`);
+                const res = await fetch(`/api/getPreviousData?date=${formattedPreviousDate}&farm=${formData.farm}&machineType=${formData.machineType}&machineNo=${formData.machineNo}`);
                 const data = await res.json();
 
                 if (data.hrAfter !== undefined && data.kwAfter !== undefined) {
@@ -76,7 +81,7 @@ export default function Home({ farms, machines }) {
         };
 
         fetchPreviousData();
-    }, [formData.saveDate, formData.farm, formData.machineType]);
+    }, [formData.saveDate, formData.farm, formData.machineType, formData.machineNo]);
 
     useEffect(() => {
         const productHr = formData.hrAfter - formData.hrBefore;
@@ -96,11 +101,16 @@ export default function Home({ farms, machines }) {
             hrBreakdown: isNaN(hrBreakdown) || hrBreakdown < 0 ? 0 : hrBreakdown,
             kwSTD: isNaN(kwSTD) ? 0 : kwSTD
         });
-    }, [formData.hrAfter, formData.hrBefore, formData.kwAfter, formData.kwBefore, formData.peaUnit, formData.machineType]);
+    }, [formData.hrAfter, formData.hrBefore, formData.kwAfter, formData.kwBefore, formData.peaUnit, formData.machineType, formData.machineNo]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({ ...formData, [name]: value });
+        setFormData({
+            ...formData,
+            [name]: ['hrAfter', 'kwAfter', 'peaUnit', 'machineNo','productValue'].includes(name)
+                ? Number(value) // แปลงค่าที่ควรเป็นตัวเลข
+                : value
+        });
     };
 
     const handleSubmit = async (e) => {
@@ -116,6 +126,9 @@ export default function Home({ farms, machines }) {
         }
         if (!formData.machineType) {
             newErrors.machineType = 'กรุณาเลือกประเภทเครื่องเจน';
+        }
+        if (!formData.machineNo){
+            newErrors.machineNo = 'กรุณาเลือกหมายเลขเครื่อง'
         }
         if (formData.hrAfter === '') {
             newErrors.hrAfter = 'กรุณาระบุค่า Current Running Hours';
@@ -136,6 +149,7 @@ export default function Home({ farms, machines }) {
         if (formData.kwAfter == 0) {
             newErrors.kwAfter = 'Current Power Production ต้องไม่เป็น 0';
         }
+        
 
         setErrors(newErrors);
 
@@ -181,7 +195,8 @@ export default function Home({ farms, machines }) {
             peaUnit: 0,
             productValue: 0,
             hrStd: 0,
-            hrBreakdown: 0
+            hrBreakdown: 0,
+            machineNo: 1
         });
 
         setErrors({});
@@ -191,40 +206,79 @@ export default function Home({ farms, machines }) {
         <div className="container mt-5">
             <h1 className="text-center">ระบบกรอกข้อมูล Biogas</h1>
             <form onSubmit={handleSubmit}>
-                <div className="row mb-3">
-                    <div className="col-md-4">
-                        <label htmlFor="saveDate" className="form-label">วันที่บันทึก</label>
-                        <input type="date" className="form-control" id="saveDate" name="saveDate" value={formData.saveDate} onChange={handleChange} required />
-                        {errors.saveDate && <p className="text-danger">{errors.saveDate}</p>}
-                    </div>
-                    <div className="col-md-4">
-                        <label htmlFor="farm" className="form-label">ฟาร์ม</label>
-                        <select className="form-select" id="farm" name="farm" value={formData.farm} onChange={handleChange} required>
-                            {farms.map((farm, index) => (
-                                <option key={index} value={farm.farmShort}>{farm.farmShort}</option>
-                            ))}
-                        </select>
-                        {errors.farm && <p className="text-danger">{errors.farm}</p>}
-                    </div>
-                    <div className="col-md-4">
-                        <label htmlFor="machineType" className="form-label">ประเภทเครื่องเจน(kw/h)</label>
-                        <select className="form-select" id="machineType" name="machineType" value={formData.machineType} onChange={handleChange} required>
-                            {machines.map((machine, index) => (
-                                <option key={index} value={machine.machineType}>{machine.machineType}</option>
-                            ))}
-                        </select>
-                        {errors.machineType && <p className="text-danger">{errors.machineType}</p>}
-                    </div>
-                </div>
+                <div className="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <div className="flex-fill">
+            <label htmlFor="saveDate" className="form-label">วันที่บันทึก</label>
+            <input
+                type="date"
+                className="form-control"
+                id="saveDate"
+                name="saveDate"
+                value={formData.saveDate}
+                onChange={handleChange}
+                required
+            />
+            {errors.saveDate && <p className="text-danger">{errors.saveDate}</p>}
+        </div>
+        <div className="flex-fill">
+            <label htmlFor="farm" className="form-label">ฟาร์ม</label>
+            <select
+                className="form-select"
+                id="farm"
+                name="farm"
+                value={formData.farm}
+                onChange={handleChange}
+                required
+            >
+                {farms.map((farm, index) => (
+                    <option key={index} value={farm.farmShort}>{farm.farmShort}</option>
+                ))}
+            </select>
+            {errors.farm && <p className="text-danger">{errors.farm}</p>}
+        </div>
+        <div className="flex-fill">
+            <label htmlFor="machineType" className="form-label">ประเภทเครื่องเจน(kw/h)</label>
+            <select
+                className="form-select"
+                id="machineType"
+                name="machineType"
+                value={formData.machineType}
+                onChange={handleChange}
+                required
+            >
+                {machines.map((machine, index) => (
+                    <option key={index} value={machine.machineType}>{machine.machineType}</option>
+                ))}
+            </select>
+            {errors.machineType && <p className="text-danger">{errors.machineType}</p>}
+        </div>
+        <div className="flex-fill">
+            <label htmlFor="machineNum" className="form-label">เครื่องที่</label>
+            <select
+                className="form-select"
+                id="machineNum"
+                name="machineNo"
+                value={formData.machineNo}
+                onChange={handleChange}
+                required
+            >
+                {machinesNo.map((macNo, index) => (
+                    <option key={index} value={macNo.machineNum}>{macNo.machineNum}</option>
+                ))}
+            </select>
+            {errors.machineNum && <p className="text-danger">{errors.machineNum}</p>}
+        </div>
+    </div>
+
 
                 <div className="row mb-3">
                     <div className="col-md-4">
-                        <label htmlFor="hrAfter" className="form-label">จำนวนชั่วโมงเดินเครื่องปัจจุบัน(Run Hours)</label>
+                        <label htmlFor="hrAfter" className="form-label">เลขเดินเครื่องปัจจุบัน(Run Hours)</label>
                         <input type="number" className="form-control" id="hrAfter" name="hrAfter" value={formData.hrAfter} onChange={handleChange} required />
                         {errors.hrAfter && <p className="text-danger">{errors.hrAfter}</p>}
                     </div>
                     <div className="col-md-4">
-                        <label htmlFor="kwAfter" className="form-label">กำลังไฟฟ้าที่ผลิตได้ปัจจุบัน(kwh)</label>
+                        <label htmlFor="kwAfter" className="form-label">เลขกำลังไฟฟ้าปัจจุบัน(kwh)</label>
                         <input type="number" className="form-control" id="kwAfter" name="kwAfter" value={formData.kwAfter} onChange={handleChange} required />
                         {errors.kwAfter && <p className="text-danger">{errors.kwAfter}</p>}
                     </div>
@@ -239,39 +293,39 @@ export default function Home({ farms, machines }) {
                     <h5 className="text-center mb-4">ข้อมูลการคำนวณอัตโนมัติ</h5>
                     <div className="row mb-3">
                         <div className="col-md-4">
-                            <label htmlFor="hrBefore" className="form-label">จำนวนชั่วโมงเดินเครื่องครั้งก่อน(Run Hours)</label>
+                            <label htmlFor="hrBefore" className="form-label">เลขเดินเครื่องครั้งก่อน(Run Hours)</label>
                             <input type="number" className="form-control" id="hrBefore" name="hrBefore" value={formData.hrBefore} readOnly />
                         </div>
                         <div className="col-md-4">
-                            <label htmlFor="kwBefore" className="form-label">กำลังไฟฟ้าที่ผลิตได้ครั้งก่อน(kwh)</label>
+                            <label htmlFor="kwBefore" className="form-label">เลขกำลังไฟฟ้าครั้งก่อน(kwh)</label>
                             <input type="number" className="form-control" id="kwBefore" name="kwBefore" value={formData.kwBefore} readOnly />
                         </div>
                         <div className="col-md-4">
-                            <label htmlFor="productHr" className="form-label">Running Hours</label>
+                            <label htmlFor="productHr" className="form-label">ชั่วโมงเดินเครื่อง</label>
                             <input type="number" className="form-control" id="productHr" name="productHr" value={formData.productHr} readOnly />
                         </div>
                     </div>
                     <div className="row mb-3">
                         <div className="col-md-4">
-                            <label htmlFor="productKw" className="form-label">Power Produced</label>
+                            <label htmlFor="productKw" className="form-label">กำลังไฟฟ้าที่ผลิตได้</label>
                             <input type="number" className="form-control" id="productKw" name="productKw" value={formData.productKw} readOnly />
                         </div>
                         <div className="col-md-4">
-                            <label htmlFor="kwSTD" className="form-label">Standard Power Production</label>
+                            <label htmlFor="kwSTD" className="form-label">มาตรฐานกำลังไฟฟ้า</label>
                             <input type="number" className="form-control" id="kwSTD" name="kwSTD" value={formData.kwSTD} readOnly />
                         </div>
                         <div className="col-md-4">
-                            <label htmlFor="productValue" className="form-label">Power Value</label>
+                            <label htmlFor="productValue" className="form-label">มูลค่าพลังงาน</label>
                             <input type="number" className="form-control" id="productValue" name="productValue" value={formData.productValue} readOnly />
                         </div>
                     </div>
                     <div className="row mb-3">
                         <div className="col-md-4">
-                            <label htmlFor="hrStd" className="form-label">Standard Work Hours</label>
+                            <label htmlFor="hrStd" className="form-label">มาตรฐานชั่วโมงเดินเครื่อง</label>
                             <input type="number" className="form-control" id="hrStd" name="hrStd" value={formData.hrStd} readOnly />
                         </div>
                         <div className="col-md-4">
-                            <label htmlFor="hrBreakdown" className="form-label">Breakdown Hours</label>
+                            <label htmlFor="hrBreakdown" className="form-label">ชั่วโมง Breakdown</label>
                             <input type="number" className="form-control" id="hrBreakdown" name="hrBreakdown" value={formData.hrBreakdown} readOnly />
                         </div>
                     </div>
