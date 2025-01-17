@@ -11,7 +11,7 @@ const formatDate = (dateString) => {
     return `${day}/${month}/${year}`;
 };
 
-export default function biogasData() {
+export default function BiogasCheck() {
     const [data, setData] = useState([]);
     const [farms, setFarms] = useState([]);
     const [filters, setFilters] = useState({
