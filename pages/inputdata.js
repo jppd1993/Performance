@@ -88,9 +88,9 @@ export default function Home({ farms, machines, machinesNo }) {
         const productKw = formData.kwAfter - formData.kwBefore;
         const productValue = (productKw * formData.peaUnit).toFixed(2);
 
-        const hrStd = 24;
+        const hrStd = formData.farm === 'SSN' ? 8 : 24;
         const hrBreakdown = hrStd - productHr;
-        const kwSTD = (formData.machineType * 80 / 100) * hrStd;
+        const kwSTD = (formData.machineType * 75 / 100) * hrStd;
 
         setFormData({
             ...formData,

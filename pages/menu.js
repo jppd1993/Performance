@@ -15,6 +15,7 @@ export default function Menu() {
 
   const menuItems = [
     { name: "กรอกข้อมูลไบโอแก๊ส", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/inputdata" },
+    { name: "ตรวจสอบข้อมูลไบโอแก๊ส", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/biogasCheck" },
     { name: "รายงานไบโอแก๊ส", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/report" },
     { name: "กรอกข้อมูลเครื่องคัดไข่", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/inputGrading" },
     { name: "ตรวจสอบข้อมูลการคัด", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/gradingCheck" },
