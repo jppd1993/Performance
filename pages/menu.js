@@ -15,11 +15,15 @@ export default function Menu() {
 
   const menuItems = [
     { name: "กรอกข้อมูลไบโอแก๊ส", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/inputdata" },
-    { name: "ตรวจสอบข้อมูลไบโอแก๊ส", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/biogasCheck" },
-    { name: "รายงานไบโอแก๊ส", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/report" },
     { name: "กรอกข้อมูลเครื่องคัดไข่", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/inputGrading" },
+    { name: "ตรวจสอบข้อมูลไบโอแก๊ส", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/biogasCheck" },
     { name: "ตรวจสอบข้อมูลการคัด", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/gradingCheck" },
+    { name: "รายงานไบโอแก๊ส", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/report" },
+    { name: "ข้อมูลไบโอแก๊สรายฟาร์ม", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/biogasGraph" },
     { name: "รายงานเครื่องคัดไข่", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/gradingReport" },
+    { name: "การกรอกข้อมูลไบโอแก๊ส", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/dataMapping" },
+    { name: "การกรอกข้อมูลเครื่องคัด", url: "https://performance-git-master-jatuphong-s-projects.vercel.app/gradingDataMapping" },
+
   ];
 
   return (
@@ -36,7 +40,7 @@ export default function Menu() {
       >
         {isMenuVisible && (
           <div style={{ padding: '20px', overflowY: 'auto', height: '100%' }}>
-            <h4 className="text-center">Main Menu</h4>
+            <h4 className="text-center">Performance</h4>
             <div className="list-group">
               {menuItems.map((item, index) => (
                 <button
